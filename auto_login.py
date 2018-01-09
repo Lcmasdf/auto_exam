@@ -71,3 +71,21 @@ def turing_test_with_external_force(val_url):
 	tree = ET.fromstring(response.text)
 
 	print(tree[0].text)
+
+
+def get_user_info_from_txt(path=None):
+	user_info = []
+	
+	if None == path:
+		file_path = 'user_name'
+	else :
+		file_path = path
+
+	with open(file_path,'rt') as file:
+		for line in file:
+			aa = line.split(' ')
+			user_info.append([aa[0],aa[1][0:-2]])
+
+	return user_info
+
+
