@@ -1,21 +1,19 @@
-from selenium import webdriver
-from time import sleep
-import doQuiz
 import auto_login
+import time
+import exception_handle
 
-'''
-driver = webdriver.Chrome()
-driver.get('http://xxjs.dtdjzx.gov.cn/')
-driver.find_element_by_class_name('lcors').click()
+if __name__ == "__main__":
+	user_list = auto_login.get_user_info_from_txt()
 
-sleep(2)
+	for user in user_list:
+		try:
+			opener = auto_login.login(user)
+		except auto_login.MyException as e:
+			exception_handle.fail_login_record(e.message)
+			print(e.message)
 
-doQuiz.do_practice(driver)
+		# post score
 
-sleep(10)
-'''
+		#log out
 
-#auto_login.turing_test_with_external_force('https://sso.dtdjzx.gov.cn/sso/validateCodeServlet?t=5.920458341211418')
-user_info = auto_login.get_user_info_from_txt()
-for i in user_info:
-	print (i[0], ' ' , i[1])
+		time.sleep(3)
