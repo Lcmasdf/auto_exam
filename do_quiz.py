@@ -3,7 +3,7 @@ from time import sleep
 
 def init_prob_set(path):
 	prob_set = {}
-	with open('prob_set.dump','r') as file:
+	with open('prob_set','r') as file:
 		for i in range(200):
 			prob = ''
 			ans = []
