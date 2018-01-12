@@ -31,14 +31,11 @@ def get_ans(prob, path='prob_set.dump'):
 	prob_set = init_prob_set(path)
 	#	prob_set_init = True
 	#	print('prob_set initialized!')
-	if (prob_set.find(prob[0]))
 
 	option_and_ans = prob_set.get(prob[0])
 
 	if None == option_and_ans:
 		return ['C']
-
-	#print(option_and_ans)
 
 	ans = []
 	for item in option_and_ans[1]:
@@ -48,7 +45,7 @@ def get_ans(prob, path='prob_set.dump'):
 				ans.append(chr(i+ord('A')))
 	return ans
 
-def do_practice(driver, num_ques=20):
+def do_practice(driver, num_ques=20, accurate=100):
 	#get next btn
 	sleep(5)
 	next_prob = driver.find_element_by_class_name('w_btn_tab_down')
@@ -74,15 +71,16 @@ def do_practice(driver, num_ques=20):
 		for item in ans:
 			radio_checker[ord(item) - ord('A')].click()
 
-		sleep(3)
+		sleep(1)
 		if i != 19:
 			next_prob.click()
-		sleep(3)
+		sleep(2)
 
     # #get submit btn
 	submit_btn = driver.find_element_by_class_name('W_fr')
 	submit_btn.click()
-	sleep(3)
+	sleep(2)
 	confirm_btn = driver.find_element_by_class_name('btn-danger')
 	confirm_btn.click()
-	sleep(3)
+	sleep(2)
+	return '100'

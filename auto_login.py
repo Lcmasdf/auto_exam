@@ -2,12 +2,14 @@ import urllib
 import sys
 import http.cookiejar
 import hashlib
+from selenium import webdriver
 from PIL import Image
 import requests
 import xml.etree.ElementTree as ET
+
 import Parse_Code
 import Parse_form
-from selenium import webdriver
+
 from time import sleep
 
 url_login = 'https://sso.dtdjzx.gov.cn/sso/login'
@@ -63,6 +65,8 @@ def get_user_info_from_txt(path=None):
 	return user_info
 
 def login_with_chrome(username, password):
+	err_login_cnt = 0
+
 	driver = webdriver.Chrome()
 	driver.get('http://xxjs.dtdjzx.gov.cn/')
 	sleep(3)
@@ -72,17 +76,21 @@ def login_with_chrome(username, password):
 	shenfen.find_element_by_xpath("//option[@value='0']").click()
 	btn_confirm = driver.find_element_by_id('bts')
 	btn_confirm.click()
-	driver.find_element_by_id("username").send_keys(username)
-	driver.find_element_by_id("password").send_keys(password)
-	driver.save_screenshot('val.png')
-	val_code = Parse_Code.turing_test_with_external_force_screec_short()
-	driver.find_element_by_id("validateCode").send_keys(val_code)
-	sleep(1)
-	driver.find_element_by_class_name('js-submit').click()
-	sleep(3)
-	if ('https://sso.dtdjzx.gov.cn/sso/login?error' == driver.current_url) :
+	
+	while err_login_cnt < 3:
+		driver.find_element_by_id("username").send_keys(username)
+		driver.find_element_by_id("password").send_keys(password)
+		driver.save_screenshot('val.png')
+		val_code = Parse_Code.turing_test_with_external_force_screec_short()
+		driver.find_element_by_id("validateCode").send_keys(val_code)
+		sleep(1)
+		driver.find_element_by_class_name('js-submit').click()
+		sleep(5)
+		if ('https://sso.dtdjzx.gov.cn/sso/login?error' == driver.current_url) :
+			err_login_cnt += 1
+			continue
+		driver.find_element_by_id("lbuts").click()
+		sleep(3)
 		return driver
-	driver.find_element_by_id("lbuts").click()
-	sleep(3)
-	return driver
+	return None
 

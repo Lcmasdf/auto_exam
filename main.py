@@ -6,13 +6,18 @@ import exception_handle
 import do_quiz
 import re
 import http.cookiejar
+import log
 
 if __name__ == "__main__":
 	user_list = auto_login.get_user_info_from_txt()
 	for user in user_list:
 		driver = auto_login.login_with_chrome(user[0], user[1])
+		if None == driver:
+			log.error_log(user[0], ' login error!')
+			continue
 
-		#do_quiz.do_practice(driver)
+		score = do_quiz.do_practice(driver)
+		log.success_log(user[0], score)
 
 		driver.quit()
 
