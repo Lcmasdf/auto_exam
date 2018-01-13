@@ -104,6 +104,9 @@ def get_user_info_from_txt(path=None,local_path='local_file'):
 			user_info.append([line, 'Aa'+line])
 		file.close()
 
+	if '' == last_pos:
+		last_pos = -1
+	print(last_pos)
 	return user_info, int(last_pos)
 
 def login_with_chrome(username, password):
