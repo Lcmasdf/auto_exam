@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from selenium import webdriver
 from time import sleep
 import auto_login
@@ -9,11 +11,20 @@ import http.cookiejar
 import log
 
 if __name__ == "__main__":
-	user_list = auto_login.get_user_info_from_txt()
-	for user in user_list:
+
+	user_list, last_pos = auto_login.get_user_info_from_txt()
+
+	print (last_pos)
+
+	for pos in range(last_pos+1, len(user_list)):
+		user = user_list[pos]
 		driver = auto_login.login_with_chrome(user[0], user[1])
+		auto_login.record_pos_2_local(pos)
 		if None == driver:
 			log.error_log(user[0], ' login error!')
+			continue
+		elif 'finish' == driver:
+			log.success_log(user[0], '  has finish the quiz!')
 			continue
 
 		score = do_quiz.do_practice(driver)
@@ -23,11 +34,11 @@ if __name__ == "__main__":
 
 		sleep(1)
 
+	print('all user has finish the quiz')
 
 
 
-
-'''
+	'''
 	user_list = auto_login.get_user_info_from_txt()
 
 	for user in user_list:
@@ -54,8 +65,9 @@ if __name__ == "__main__":
 		#log out
 
 		time.sleep(3)
-'''	
-'''
+	'''
+
+	'''
 	driver = webdriver.Chrome()
 	driver.get('http://xxjs.dtdjzx.gov.cn/')
 	driver.find_element_by_class_name('lcors ').click()
@@ -68,13 +80,13 @@ if __name__ == "__main__":
 		items = questions[i].text.split('\n')
 		index = items[0].find('题')
 		question = re.sub('[、，《》（）。？：“”]', '', items[0][index+1:])
-		print (question)
+		#print (question)
 		answerA = re.sub('[、，《》（）。？：“”]', '', items[1][2:])
 		answerB = re.sub('[、，《》（）。？：“”]', '', items[2][2:])
 		answerC = re.sub('[、，《》（）。？：“”]', '', items[3][2:])
 		answerD = re.sub('[、，《》（）。？：“”]', '', items[4][2:])
 		prob = [question,[answerA,answerB,answerC,answerD]]
-		print(prob)
+		#print(prob)
 		ans = do_quiz.get_ans(prob)
 
 		for item in ans:
@@ -89,4 +101,4 @@ if __name__ == "__main__":
 	submit_btn.click()
 
 	sleep(10)
-'''
+	'''

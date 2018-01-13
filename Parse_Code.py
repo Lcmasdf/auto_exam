@@ -7,6 +7,18 @@ import requests
 import xml.etree.ElementTree as ET
 from PIL import Image
 from selenium import webdriver
+import configparser
+import codecs
+
+def get_val_img_pos_from_ini():
+	config = configparser.ConfigParser()
+	config.readfp(codecs.open('config.ini','r','utf-8-sig'))
+	topleft_x = config.get('img', 'topleft_x')
+	topleft_y = config.get('img', 'topleft_y')
+	bottomright_x = config.get('img', 'bottomright_x')
+	bottomright_y = config.get('img', 'bottomright_y')
+	print(type(topleft_x))
+	return int(topleft_x), int(topleft_y), int(bottomright_x), int(bottomright_y)
 
 
 def turing_test_with_external_force(val_url, opener):
@@ -70,8 +82,10 @@ def turing_test_with_external_force(val_url, opener):
 	return tree[0].text
 
 def turing_test_with_external_force_screec_short():
+	topleft_x, topleft_y, bottomright_x, bottomright_y = get_val_img_pos_from_ini()
+	print(topleft_x, topleft_y, bottomright_x, bottomright_y)
 	with Image.open('val.png') as img:
-		img_val = img.crop((499,321,623,351))
+		img_val = img.crop((topleft_x,topleft_y,bottomright_x,bottomright_y))
 		img_val.save('val.jpeg')
 
 	url = 'http://api.ruokuai.com/create.xml'
