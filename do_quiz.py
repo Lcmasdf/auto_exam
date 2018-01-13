@@ -40,6 +40,7 @@ def get_ans(prob, path='prob_set.dump'):
 
 	ans = []
 	for item in option_and_ans[1]:
+		print(item)
 		option_desc = option_and_ans[0][ord(item)-ord('A')]
 		for i in range(4):
 			if (prob[1][i] == option_desc):

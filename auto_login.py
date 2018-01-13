@@ -10,6 +10,7 @@ import re
 
 import Parse_Code
 import Parse_form
+import easy_read
 
 from time import sleep
 
@@ -36,7 +37,9 @@ def login(user):
 		html = opener.open(url_login).read()
 		data = Parse_form.parse_form(html)
 		data['username'] = username
+		print(username)
 		data['password'] = password
+		print(password)
 		data['validateCode'] = code.upper()
 		encode_data = urllib.parse.urlencode(data).encode('utf8')
 		print(encode_data)
@@ -64,9 +67,9 @@ def calc_md5(file):
 	return md5_value.hexdigest()
 
 def record_pos_2_local(pos,local_path='local_file'):
-	with open(local_path, 'r', encoding='UTF-8') as file:
-		md5 = re.sub('\n', '', file.readline())
-		file.close()
+	data = easy_read.read_from_utf8(local_path)
+	lines = data.split('\n')
+	md5 = lines[0]
 
 	with open(local_path, 'w', encoding='UTF-8') as file:
 		file.write(md5)
@@ -74,35 +77,50 @@ def record_pos_2_local(pos,local_path='local_file'):
 		file.write(str(pos))
 		file.close()
 
-
-
 def get_user_info_from_txt(path=None,local_path='local_file'):
 	user_info = []
 
 	if None == path:
-		file_path = 'user_name.txt'
+		user_name_path = 'user_name.txt'
 	else :
-		file_path = path
+		user_name_path = path
 
+
+	'''
 	with open(local_path,'rt',encoding='UTF-8') as file:
 		last_md5 = re.sub('\n', '', file.readline())
 		last_pos = re.sub('\n', '', file.readline())
 		file.close()
-	new_md5 = calc_md5(file_path)
+	'''
+	#获取上次答题时的md5校验码以及答题位置
+	data = easy_read.read_from_utf8(local_path)
+	if None == data:
+		last_pos = -1
+		last_md5 = 0
+	else:
+		lines = data.split('\n')
+		last_md5 = lines[0]
+		if (len(lines) == 2):
+			last_pos = lines[1]
+		else:
+			last_pos = -1
+
+	#计算本次答题的md5校验码
+	new_md5 = calc_md5(user_name_path)
+
 	if last_md5 != new_md5:
 		last_pos = -1
 		print('file change, do from the start!')
 
-	with open(local_path,'w',encoding='UTF-8') as file:
+	with open(local_path,'w') as file:
 		file.write(new_md5)
 		file.close()
 
-	with open(file_path,'rt',encoding='UTF-8') as file:
-		for line in file:
-			#get the last '\n' off
-			line = re.sub('\n', '', line)
-			user_info.append([line, 'Aa'+line])
-		file.close()
+
+	data = easy_read.read_from_utf8(user_name_path)
+	lines = data.split('\n')
+	for line in lines:
+		user_info.append([line, 'Aa'+line])
 
 	if '' == last_pos:
 		last_pos = -1
@@ -124,7 +142,9 @@ def login_with_chrome(username, password):
 	
 	while err_login_cnt < 3:
 		driver.find_element_by_id("username").send_keys(username)
+		print(username)
 		driver.find_element_by_id("password").send_keys(password)
+		print(password)
 		driver.save_screenshot('val.png')
 		val_code = Parse_Code.turing_test_with_external_force_screec_short()
 		driver.find_element_by_id("validateCode").send_keys(val_code)
