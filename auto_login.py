@@ -1,169 +1,149 @@
-import urllib
-import sys
-import http.cookiejar
-import hashlib
-from selenium import webdriver
-from PIL import Image
-import requests
-import xml.etree.ElementTree as ET
-import re
-
-import Parse_Code
-import Parse_form
-import easy_read
-
 from time import sleep
+import hashlib
+import requests
+from PIL import Image
+import datetime
+import xml.etree.ElementTree as ET
+import configparser
+import codecs
 
-url_login = 'https://sso.dtdjzx.gov.cn/sso/login'
-url_code = 'https://sso.dtdjzx.gov.cn/sso/validateCodeServlet?t=1.713432'
+class recognize_val_code:
+    def __init__(self):
+        self.top_left_x = 0
+        self.top_left_y = 0
+        self.bottom_right_x = 0
+        self.bottom_right_y = 0
+        pass
 
-class MyException(Exception):
-	def __init__(self,message):
-		Exception.__init__(self)
-		self.message=message 
+    #设置截取验证码的位置（左上角、右下角的坐标）
+    def set_val_pos(self, top_left_x, top_left_y, bottom_right_x, bottom_right_y):
+        self.top_left_x = top_left_x
+        self.top_left_y = top_left_y
+        self.bottom_right_x = bottom_right_x
+        self.bottom_right_y = bottom_right_y
 
-def login(user):
-	error_login_cnt = 0
-	while (error_login_cnt < 3) : 
-		username = user[0]
-		password = user[1]
+    #使用若快答题识别验证码
+    def recognize(self, driver):
+        #保存当前页面截图
+        driver.save_screenshot('val.png')
 
-		cj = http.cookiejar.CookieJar()
+        #从截图中剪切出验证码部分
+        with Image.open('val.png') as img:
+            img_val = img.crop((self.top_left_x, self.top_left_y, self.bottom_right_x, self.bottom_right_y))
+            img_val.save('upload.gif', format='gif')
 
-		processor = urllib.request.HTTPCookieProcessor(cj)
-		opener = urllib.request.build_opener(processor)
-		code = Parse_Code.turing_test_with_external_force(url_code, opener)
-		code = str(code)
-		html = opener.open(url_login).read()
-		data = Parse_form.parse_form(html)
-		data['username'] = username
-		print(username)
-		data['password'] = password
-		print(password)
-		data['validateCode'] = code.upper()
-		encode_data = urllib.parse.urlencode(data).encode('utf8')
-		print(encode_data)
-		request = urllib.request.Request(url_login, data=encode_data)
-		response = opener.open(request)
-		if ('https://www.dtdjzx.gov.cn/member/' == response.geturl()):
-			print(data['username'],'  login success!')
-			for item in cj:
-				print (item.name, item.value)
-			return cj
-		else:
-			error_login_cnt += 1
-	raise MyException(user[0] + '  login error')
+        #初始化使用若快识别验证码的API
+        url = 'http://api.ruokuai.com/create.xml'
+        imagePath = 'val.jpeg'
+        paramDict = {'username':'lcmasdf',
+                     'password':'lcm123456',
+                     'typeid':3040,
+                     'timeout':90,
+                     'softid':1,
+                     'softkey':'b40ffbee5c1cf4e38028c197eb2fc751'}
+        paramKeys = ['username',
+                     'password',
+                     'typeid',
+                     'timeout',
+                     'softid',
+                     'softkey']
 
-def calc_md5(file):
-	import hashlib
-	md5_value = hashlib.md5()
-	with open(file,'rb') as f:
-		while True:
-			data = f.read(2048)
-			if not data:
-				break
-			md5_value.update(data)
+        with open('upload.gif', 'rb') as file:
+            filebytes = file.read()
 
-	return md5_value.hexdigest()
+            time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            boundary = '------------' + hashlib.md5(time_str.encode('utf8')).hexdigest().lower()
+            boundary_str = '\r\n--%s\r\n' % (boundary)
 
-def record_pos_2_local(pos,local_path='local_file'):
-	data = easy_read.read_from_utf8(local_path)
-	lines = data.split('\n')
-	md5 = lines[0]
+            bs = b''
+            for key in paramKeys:
+                bs = bs + boundary_str.encode('ascii')
+                param = "Content-Disposition: form-data; name=\"%s\"\r\n\r\n%s" % (key, paramDict[key])
+                bs = bs + param.encode('utf8')
+            bs = bs + boundary_str.encode('ascii')
 
-	with open(local_path, 'w', encoding='UTF-8') as file:
-		file.write(md5)
-		file.write('\n')
-		file.write(str(pos))
-		file.close()
+            header = 'Content-Disposition: form-data; name=\"image\"; filename=\"%s\"\r\nContent-Type: image/gif\r\n\r\n' % (
+                'sample')
+            bs = bs + header.encode('utf8')
 
-def get_user_info_from_txt(path=None,local_path='local_file'):
-	user_info = []
+            bs = bs + filebytes
+            tailer = '\r\n--%s--\r\n' % (boundary)
+            bs = bs + tailer.encode('ascii')
 
-	if None == path:
-		user_name_path = 'user_name.txt'
-	else :
-		user_name_path = path
+            headers = {'Content-Type': 'multipart/form-data; boundary=%s' % boundary,
+                       'Connection': 'Keep-Alive',
+                       'Expect': '100-continue',
+                       }
+            response = requests.post(url, params='', data=bs, headers=headers)
 
+            tree = ET.fromstring(response.text)
+            return tree[0].text
 
-	'''
-	with open(local_path,'rt',encoding='UTF-8') as file:
-		last_md5 = re.sub('\n', '', file.readline())
-		last_pos = re.sub('\n', '', file.readline())
-		file.close()
-	'''
-	#获取上次答题时的md5校验码以及答题位置
-	data = easy_read.read_from_utf8(local_path)
-	if None == data:
-		last_pos = -1
-		last_md5 = 0
-	else:
-		lines = data.split('\n')
-		last_md5 = lines[0]
-		if (len(lines) == 2):
-			last_pos = lines[1]
-		else:
-			last_pos = -1
+class auto_login:
+    def __init__(self, config_file_path='config.ini'):
+        self.config_file_path = config_file_path
+        self.recognize = recognize_val_code()
 
-	#计算本次答题的md5校验码
-	new_md5 = calc_md5(user_name_path)
+    #从配置文件中读取验证码的坐标
+    def load_configuration(self):
+        config = configparser.ConfigParser()
+        config.read_file(codecs.open('config.ini', 'r', 'utf-8-sig'))
+        top_left_x = int(config.get('img', 'topleft_x'))
+        top_left_y = int(config.get('img', 'topleft_y'))
+        bottom_right_x = int(config.get('img', 'bottomright_x'))
+        bottom_right_y = int(config.get('img', 'bottomright_y'))
+        self.recognize.set_val_pos(top_left_x,
+                                   top_left_y,
+                                   bottom_right_x,
+                                   bottom_right_y)
 
-	if last_md5 != new_md5:
-		last_pos = -1
-		print('file change, do from the start!')
+    def login(self, username, password, driver):
+        #登录三次失败后，放弃本次登录
+        err_login_cnt = 0
 
-	with open(local_path,'w') as file:
-		file.write(new_md5)
-		file.close()
+        driver.get('http://xxjs.dtdjzx.gov.cn/')
+        sleep(2)
 
+        #点击左侧竞赛答题
+        driver.find_element_by_id('lbuts').click()
+        sleep(2)
 
-	data = easy_read.read_from_utf8(user_name_path)
-	lines = data.split('\n')
-	for line in lines:
-		user_info.append([line, 'Aa'+line])
+        #选择党员身份
+        shenfen = driver.find_element_by_id('shenfen')
+        shenfen.find_element_by_xpath("//option[@value='0']").click()
+        btn_confirm = driver.find_element_by_id('bts')
+        btn_confirm.click()
 
-	if '' == last_pos:
-		last_pos = -1
-	print(last_pos)
-	return user_info, int(last_pos)
+        while err_login_cnt < 3:
+            #填入用户名密码验证码
+            driver.find_element_by_id('username').send_keys(username)
+            sleep(1)
+            driver.find_element_by_id('password').send_keys(password)
+            sleep(1)
+            val_code = self.recognize.recognize(driver)
+            driver.find_element_by_id("validateCode").send_keys(val_code)
+            sleep(1)
 
-def login_with_chrome(username, password):
-	err_login_cnt = 0
+            #点击登录
+            driver.find_element_by_class_name('js-submit').click()
+            sleep(3)
 
-	driver = webdriver.Chrome()
-	driver.get('http://xxjs.dtdjzx.gov.cn/')
-	sleep(3)
-	driver.find_element_by_id('lbuts').click()
-	sleep(3)
-	shenfen = driver.find_element_by_id('shenfen')
-	shenfen.find_element_by_xpath("//option[@value='0']").click()
-	btn_confirm = driver.find_element_by_id('bts')
-	btn_confirm.click()
-	
-	while err_login_cnt < 3:
-		driver.find_element_by_id("username").send_keys(username)
-		print(username)
-		driver.find_element_by_id("password").send_keys(password)
-		print(password)
-		driver.save_screenshot('val.png')
-		val_code = Parse_Code.turing_test_with_external_force_screec_short()
-		driver.find_element_by_id("validateCode").send_keys(val_code)
-		sleep(1)
-		driver.find_element_by_class_name('js-submit').click()
-		sleep(5)
-		if ('https://sso.dtdjzx.gov.cn/sso/login?error' == driver.current_url) :
-			err_login_cnt += 1
-			continue
+            #若登录失败，增加失败计数，从新开始登录
+            if ('https://sso.dtdjzx.gov.cn/sso/login?error' == driver.current_url):
+                err_login_cnt += 1
+                continue
 
-		left_opportunity = driver.find_element_by_class_name('l_jihui')
-		#print(left_opportunity.text[2])
-		print(left_opportunity.text)
-		if ('0' == left_opportunity.text[2]):
-			driver.quit()
-			return None
+            #登录成功后获取答题次数
+            opportunity = driver.find_element_by_class_name('l_jihui')
+            #剩余答题次数为0，不进行后续操作
+            if '0' == opportunity.text[2]:
+                driver.quit()
+                return None
 
-		driver.find_element_by_id("lbuts").click()
-		sleep(3)
-		return driver
-	driver.quit()
-	return None
+            driver.find_element_by_id("lbuts").click()
+            sleep(3)
+            return driver
+
+        #登录错误次数超过三次，可认为登录错误归因于用户名密码错误
+        driver.quit()
+        return None
