@@ -152,8 +152,8 @@ class auto_exam:
     #获取当前页面题目
     def __get_question(self, driver, index):
         questions = driver.find_elements_by_xpath(
-            #"//body/div[@class='l_box']/div/div[@class='w_loads']/div/div[@class='W_ti W_mt22']/ul/li")
-            "//body/div[@class='l_box']/div/div[@class='W_ti W_mt22']/ul/li")
+            "//body/div[@class='l_box']/div/div[@class='w_loads']/div/div[@class='W_ti W_mt22']/ul/li")
+            #"//body/div[@class='l_box']/div/div[@class='W_ti W_mt22']/ul/li")
 
         items = questions[index].text.split('\n')
         #TODO 为什么在网页获取的时候仍然要找到'题'的位置
@@ -195,3 +195,11 @@ class auto_exam:
                 next_prob_btn.click()
 
             sleep(2)
+
+        # get submit btn
+        submit_btn = driver.find_element_by_class_name('W_fr')
+        submit_btn.click()
+        sleep(2)
+        confirm_btn = driver.find_element_by_class_name('btn-danger')
+        confirm_btn.click()
+        sleep(2)

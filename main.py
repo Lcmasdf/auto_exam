@@ -4,7 +4,6 @@ from selenium import webdriver
 from time import sleep
 import auto_login
 import time
-import do_quiz
 import re
 import http.cookiejar
 import log
