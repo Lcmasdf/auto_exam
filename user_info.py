@@ -1,5 +1,6 @@
 import easy_read
 import threading
+import log
 
 #TODO : 如何将user_info实现为线程安全
 class user_info:
@@ -26,17 +27,19 @@ class user_info:
             lines = data.split('\n')
             last_md5 = lines[0]
             if len(lines) == 2:
-                last_pos = lines[1]
+                last_pos = int(lines[1])
             else:
                 last_pos = -1
 
         #计算当前user_info文件的md5值
         new_md5 = self.calc_md5(self.user_info_file_path)
-        self.mdt = new_md5
+        self.md5 = new_md5
 
         #新旧user_info不同，为了保证将所有用户都答题，讲user_info中的用户全部重新答
         if last_md5 != new_md5:
             self.pos = -1
+            log.success_log('new','')
+            log.error_log('','new')
         else:
             self.pos = last_pos
 

@@ -6,6 +6,7 @@ import datetime
 import xml.etree.ElementTree as ET
 import configparser
 import codecs
+import log
 
 class recognize_val_code:
     def __init__(self):
@@ -142,8 +143,10 @@ class auto_login:
 
             driver.find_element_by_id("lbuts").click()
             sleep(3)
+            log.success_log('username', username)
             return driver
 
         #登录错误次数超过三次，可认为登录错误归因于用户名密码错误
         driver.quit()
+        log.error_log(username, 'error username/password!')
         return None

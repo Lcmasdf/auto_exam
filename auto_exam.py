@@ -8,6 +8,7 @@ import random
 import auto_login
 import user_info
 import easy_read
+import log
 
 #初始化题库，根据题目得到答案
 class question_bank:
@@ -27,6 +28,7 @@ class question_bank:
         data = easy_read.read_from_utf8(self.file_path)
 
         data_list = data.split('\n')
+        self.total_question = int(len(data_list)/6)
         for prob_index in range(self.total_question):
             prob = ''
             ans = []
@@ -40,11 +42,11 @@ class question_bank:
                         prob = line[index+1:]
                         prob = self.unpunctuate(prob)
                 elif 5 == prob_desc_index:
-                    index = line.find('：')
+                    index = line.find(':')
                     if -1 != index:
                         #二月份题目答案没有用'，'隔开
-                        #ans = line[index+2:-1].split(',')
-                        ans = list(line[index+1:])
+                        ans = line[index+2:].split(',')
+                        #ans = list(line[index+1:])
                 else:
                     index = line.find('、')
                     if -1 != index:
@@ -52,11 +54,12 @@ class question_bank:
             self.prob_set[prob] = [option, ans]
 
     #根据题目找到答案
+    #若找不到该题目，则返回E
     @staticmethod
     def get_answer(question):
         options_answers = question_bank.prob_set.get(question[0])
         if None == options_answers:
-            return ['C']
+            return ['E']
 
         ans = []
         for item in options_answers[1]:
@@ -179,11 +182,18 @@ class auto_exam:
             print('剩余答题次数为0')
             return
 
+        error_cnt = 0
         #获取下一题按钮
         next_prob_btn = driver.find_element_by_class_name('w_btn_tab_down')
         for i in range(self.question_num):
             prob = self.__get_question(driver, i)
             ans = self.question_bank.get_answer(prob)
+            #当找不到题目的答案时，get_answer返回E。
+            # “我要的并不在这里，你给的答案没意义，都选C，都选C~”
+            #                                        --大鹏
+            if 'E' == ans[0]:
+                error_cnt += 1
+                ans[0] = 'C'
             ans = self.__ans_dropout(ans)
 
             radio_checker = driver.find_elements_by_name("%s%s" % ('ra_', i))
@@ -202,4 +212,5 @@ class auto_exam:
         sleep(2)
         confirm_btn = driver.find_element_by_class_name('btn-danger')
         confirm_btn.click()
-        sleep(2)
+        log.success_log('score',str((20-error_cnt)*5))
+        sleep(20)
