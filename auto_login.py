@@ -105,6 +105,13 @@ class auto_login:
         driver.get('http://xxjs.dtdjzx.gov.cn/')
         sleep(2)
 
+        # 关闭提示框
+        cancel_tip = driver.find_elements_by_xpath(
+            "//body/div[@id='myxiaoxi']/div/div/div[@class='modal-header']/button")
+        if cancel_tip[0]:
+            cancel_tip[0].click()
+            sleep(2)
+
         #点击左侧竞赛答题
         driver.find_element_by_id('lbuts').click()
         sleep(2)
@@ -134,6 +141,14 @@ class auto_login:
                 err_login_cnt += 1
                 continue
 
+            #关闭提示框
+
+            cancel_tip = driver.find_elements_by_xpath(
+                "//body/div[@id='myxiaoxi']/div/div/div[@class='modal-header']/button")
+            if cancel_tip[0]:
+                cancel_tip[0].click()
+                sleep(2)
+
             #登录成功后获取答题次数
             opportunity = driver.find_element_by_class_name('l_jihui')
             #剩余答题次数为0，不进行后续操作
@@ -144,6 +159,9 @@ class auto_login:
             driver.find_element_by_id("lbuts").click()
             sleep(3)
             log.success_log('username', username)
+
+
+
             return driver
 
         #登录错误次数超过三次，可认为登录错误归因于用户名密码错误
